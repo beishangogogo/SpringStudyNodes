@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- 配置Service -->
+    <bean id="accountService" class="com.beishan.service.impl.AccountServiceImpl">
+        <property name="accountDao" ref="accountDao"></property>
+    </bean>
+
+    <!-- 配置Dao -->
+    <bean id="accountDao" class="com.beishan.dao.impl.AccountDao">
+        <property name="runner" ref="runner"></property>
+        <property name="connectionUtils" ref="connectionUtils"></property>
+    </bean>
+
+    <!-- 配置QueryRunner -->
+    <bean id="runner" class="org.apache.commons.dbutils.QueryRunner" scope="prototype"></bean>
+
+    <!-- 配置数据源 -->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <!-- 连接数据库的必备信息 -->
+        <property name="driverClass" value="com.mysql.jdbc.Driver"></property>
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/beishan01"></property>
+        <property name="user" value="beishan"></property>
+        <property name="password" value="Database_9527"></property>
+    </bean>
+
+    <!-- 配置Connection的工具类 ConnectionUtils -->
+    <bean id="connectionUtils" class="com.beishan.utils.ConnectionUtils">
+        <!-- 注入数据源 -->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!-- 配置事务管理 -->
+    <bean id="txManager" class="com.beishan.utils.TransactionManager">
+        <property name="connectionUtils" ref="connectionUtils"></property>
+    </bean>
+
+    <!-- 配置AOP -->
+    <aop:config>
+        <aop:pointcut id="pc" expression="execution(* com.beishan.service.impl.*(..))"></aop:pointcut>
+        <aop:aspect id="txAdvice" ref="txManager">
+            <aop:before method="beginTransaction" pointcut-ref="pc"></aop:before>
+            <aop:after-returning method="commit" pointcut-ref="pc"></aop:after-returning>
+            <aop:after-throwing method="rollback" pointcut-ref="pc"></aop:after-throwing>
+            <aop:after method="release" pointcut-ref="pc"></aop:after>
+        </aop:aspect>
+    </aop:config>
+</beans>
